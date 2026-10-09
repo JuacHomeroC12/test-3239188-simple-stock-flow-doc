@@ -12,7 +12,7 @@ The system relies on PostgreSQL 16, using the `sales` schema and five main table
 
 | Element | Interaction with the system | Evidence |
 |---|---|---|
-| Administrator (`admin`) | Manages seller accounts according to decision DP-04. The initial account is provisioned from the environment at startup. | §2.5, DP-04, §9.2 |
+| Administrator (`admin`) | Creates seller accounts according to DP-04; the initial `admin` role is provisioned by deployment from the environment and is not granted at runtime. | §2.5, DP-04, §9.2, §11, §13 |
 | Seller (`seller`) | Internal operator who authenticates and records sales. | §1, §2.5 |
 | PostgreSQL 16 | Persists the catalog, categories, sales, sale items, and users; enforces the stated integrity constraints. | §0, §3–§6, §10 |
 | External image service | Stores and deletes image binaries; the database retains only an opaque key. | D-08, §1, §7.1 |
@@ -51,7 +51,7 @@ The system relies on PostgreSQL 16, using the `sales` schema and five main table
 
 ## 6. Explicit Boundaries and Uncertainties
 
-- The exact permission matrix for each operation is not fully defined by the model. The role is limited to `admin` and `seller`; the API must enforce authorization. **Assumption SR-1:** the administrator is expected to manage the catalog and accounts, but who can view reports and who can modify each field requires confirmation.
+- The role set is limited to `admin` and `seller`. DP-04 and H-3 settle that the initial administrator is provisioned by deployment and that an administrator creates seller accounts (§9.2, §11, §13). The exact permission matrix for catalog operations and report access remains unspecified; do not infer it from the `role` column alone.
 - The retention policy for an orphaned image binary, if deletion fails after the reference is removed, is unresolved. The model identifies this as H-2, an operational concern outside the schema (§7.1, §11).
-- Some rule statuses and structural details are internally contradictory. The architecture must disclose these contradictions rather than replace the actual database state with a documentary inference (§3, §4, §10, §13).
-- The exact report grouping criterion must reconcile any earlier requirement of “one row per product” with the decision to group by product and frozen category (§11.1).
+- Rule statuses and structural details remain inconsistent inside the data model. In particular, §13 declares D-1 and D-2 paid off on 2026-09-20, while older section text, the §10 query snapshots dated 2026-09-19, and the §12 sign-off preserve earlier statuses. Record the later declaration but do not claim an independent database re-check (§3, §4, §10, §12, §13).
+- The report grouping decision H-1 is closed: group by product and frozen category label. The signed acceptance criterion CA-06.1 still needs wording alignment with that decision (§11.1).

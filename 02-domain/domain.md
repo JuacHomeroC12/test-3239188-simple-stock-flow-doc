@@ -1,6 +1,6 @@
 # Domain — Simple Stock Flow
 
-> **Source:** [`spec/data-model.md`](../spec/data-model.md), especially §1–§8 and §11. Rules are distinguished according to whether they are enforced by the database engine, enforced only by the domain, or still pending.
+> **Source:** [`spec/data-model.md`](../spec/data-model.md), especially §1–§8 and §11–§13. The business rule and its current implementation status are tracked separately. The model's later debt register (§13, 2026-09-20) declares D-1 and D-2 paid off, but older status markers and the §10 query snapshots dated 2026-09-19 are not fully synchronized; disputed statuses are called out rather than silently resolved.
 
 ## 1. Ubiquitous Language
 
@@ -40,24 +40,24 @@ erDiagram
 
 | ID | Rule | Enforcement/evidence |
 |---|---|---|
-| RD-01 | A product name is required and is stored trimmed. | `Product.Rename`; `NOT NULL` in the engine, non-empty validation currently only in the domain (§2.2). |
-| RD-02 | A product price must be strictly positive. | `Product.ChangePrice`; currently domain-only, with migration to the database planned in T-20 (§2.2, §4). |
-| RD-03 | Stock must never become negative. | `Product.Withdraw` / `Restock` and PostgreSQL `CHECK stock >= 0` (§2.2, §4, ADR-002). |
-| RD-04 | More units than are available cannot be withdrawn. | `Product.Withdraw`; domain process rule (§2.2). |
-| RD-05 | Every product must belong to an existing category. | `Product.SetCategory` and FK-1 with `ON DELETE RESTRICT` (§2.2, §5). |
-| RD-06 | A missing image is represented by `NULL`; the system stores an opaque key, not bytes or paths. | `Product.AttachImage`, D-08, §2.2, §7.1. |
-| RD-07 | Products are soft-deleted; they are not physically deleted. | `deleted_at`, global filter, D-03, and ADR-003 (§2.2, §7.1). |
-| RD-08 | A category name is required, non-empty, and trimmed. | `Category.Rename`; non-empty validation is currently domain-only (§2.1, §4). |
-| RD-09 | Two categories cannot have the same name. | Unique index `IX_category_name` (§2.1, §4). |
-| RD-10 | The category catalog is fixed and read-only in the application; five categories are seeded by the initial migration. | D-10, §2.1, §9.1. |
-| RD-11 | A sale must identify the responsible operator with a required, non-empty value. | `Sale` constructor; `sold_by_user_id` and FK-4 are still marked as pending task T-12 in the model (§2.3, §3, §5). |
-| RD-12 | A sale can be confirmed only if it contains at least one item. | `Sale.EnsureConfirmable`; domain-only rule (§2.3). |
-| RD-13 | A product cannot appear more than once in the same sale. | `Sale.AddItem`; also supported by the unique index `(sale_id, product_id)` according to the status/task references in the model (§2.3, §4, §13). |
-| RD-14 | Adding a sale item and withdrawing stock are treated as one domain operation. | `Sale.AddItem` calls `Product.Withdraw` before adding the item (§2.3). |
-| RD-15 | A recorded sale cannot be edited or deleted. | No edit/delete ports exist; retention is indefinite (§2.3, §7.1). |
-| RD-16 | Each sale item requires a strictly positive quantity. | `Quantity` constructor; currently domain-only (§2.4, §4). |
-| RD-17 | Sale items freeze the product name, unit price, and category name at the time of sale. | `Sale.AddItem`, D-06, §2.4, ADR-004. These values are not updated when the catalog changes. |
-| RD-18 | A user must have a required, unique, lowercase, trimmed username; the role must be `admin` or `seller`; the domain handles only password hashes. | `User.NormalizeUsername`, `Roles.IsValid`, hash port, D-09, §2.5, §4, §7. Username normalization and role validation are currently domain-only. |
+| DR-01 | A product name is required and is stored trimmed. | `Product.Rename`; `NOT NULL` in the engine, non-empty validation currently only in the domain (§2.2). |
+| DR-02 | A product price must be strictly positive. | `Product.ChangePrice`; currently domain-only, with migration to the database planned in T-20 (§2.2, §4). |
+| DR-03 | Stock must never become negative. | `Product.Withdraw` / `Restock` and PostgreSQL `CHECK stock >= 0` (§2.2, §4, ADR-002). |
+| DR-04 | More units than are available cannot be withdrawn. | `Product.Withdraw`; domain process rule (§2.2). |
+| DR-05 | Every product must belong to an existing category. | `Product.SetCategory` and FK-1 with `ON DELETE RESTRICT` (§2.2, §5). |
+| DR-06 | A missing image is represented by `NULL`; the system stores an opaque key, not bytes or paths. | `Product.AttachImage`, D-08, §2.2, §7.1. |
+| DR-07 | Products are soft-deleted; they are not physically deleted. | Intended rule: D-03 and ADR-003. Latest status: §13 says D-1 was paid off and `product.deleted_at` plus the global filter exist. The older §10.1 output dated 2026-09-19 omits the column, so the document's physical evidence is stale/inconsistent and should be refreshed. |
+| DR-08 | A category name is required, non-empty, and trimmed. | `Category.Rename`; non-empty validation is currently domain-only (§2.1, §4). |
+| DR-09 | Two categories cannot have the same name. | Unique index `IX_category_name` (§2.1, §4). |
+| DR-10 | The category catalog is fixed and read-only in the application; five categories are seeded by the initial migration. | D-10, §2.1, §9.1. |
+| DR-11 | A sale must identify the responsible operator with a required, non-empty value. | `Sale` constructor; `sold_by_user_id` and FK-4 are still marked as pending task T-12 in the model (§2.3, §3, §5). |
+| DR-12 | A sale can be confirmed only if it contains at least one item. | `Sale.EnsureConfirmable`; domain-only rule (§2.3). |
+| DR-13 | A product cannot appear more than once in the same sale. | Enforced by `Sale.AddItem`. §13 says D-2 was paid off and the unique index `(sale_id, product_id)` is present; older §6.2/§10.3 evidence and §12 retain the previous missing/pending status. Latest model-declared status: engine; refresh the query output to remove the documentary conflict. |
+| DR-14 | Adding a sale item and withdrawing stock are treated as one domain operation. | `Sale.AddItem` calls `Product.Withdraw` before adding the item (§2.3). |
+| DR-15 | A recorded sale cannot be edited or deleted. | No edit/delete ports exist; retention is indefinite (§2.3, §7.1). |
+| DR-16 | Each sale item requires a strictly positive quantity. | `Quantity` constructor; currently domain-only (§2.4, §4). |
+| DR-17 | Sale items are intended to freeze the product name, unit price, and category name at the time of sale. | Product name and unit price snapshots are described in §2.3–§2.4 and ADR-004. The physical status of `sale_item.category_name` is disputed: §2.4 calls it engine-enforced, but §3/§10.1 mark it pending/absent. T-11 is not listed as paid off in §13; verify before claiming the category snapshot column is deployed. |
+| DR-18 | A user must have a required, unique, lowercase, trimmed username; the role must be `admin` or `seller`; the domain handles only password hashes. | `User.NormalizeUsername`, `Roles.IsValid`, hash port, D-09, §2.5, §4, §7. Username normalization and role validation are currently domain-only. |
 
 **Implementation-status note:** A rule identifier does not mean the database already enforces the rule. The model marks some rules as “domain-only” and others as “pending (T-xx).” For example, `price > 0`, `quantity > 0`, role validity, and username normalization currently depend on the domain; T-20 plans to move invariants that the database can express into the engine (§4, T-20).
 
@@ -76,7 +76,7 @@ A need for an audit table, event table, or `created_at` / `updated_at` columns c
 ## 5. Integrity, Persistence, and Concurrency
 
 - There are five main tables: `category`, `product`, `sale`, `sale_item`, and `user`. `Money`, `Quantity`, and date range are value objects and do not have their own tables (§1–§3, D-07).
-- PostgreSQL enforces primary keys, uniqueness of category name and username, FK-1, FK-2, and `CHECK stock >= 0`, as stated in §4 and §5. FK-3 and FK-4 are listed as pending tasks in the model and must not be treated as current guarantees without checking their status.
+- PostgreSQL enforcement is documented for primary keys, uniqueness of category name and username, FK-1, FK-2, and `CHECK stock >= 0` (§4–§5). For FK-3 and the composite unique index, the later debt register (§13, D-2) says the work is paid off and the objects exist, but older §10 output and §12 still report missing/pending status. Use “latest model-declared status: engine; historical evidence requires refresh.” FK-4 and `sale.sold_by_user_id` remain pending T-12. The physical status of `sale_item.category_name` is separately disputed.
 - Concurrent stock writes use optimistic concurrency control through `xmin`; the `CHECK` constraint prevents a write from leaving stock negative even if the domain flow fails (D-04, ADR-002).
 - The sale and its stock changes must be saved atomically; **assumption SA-2**, because the transaction itself must be verified in the implementation (§2.3 and architecture).
 

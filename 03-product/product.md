@@ -50,7 +50,7 @@ According to the decisions reflected in the model, the product **does not** incl
 - A valid sale reduces stock for its products and never causes stock to fall below zero (§2.2–§2.3, ADR-002).
 - The history preserves the name, price, and category each product had at the time of sale (§2.4, D-06, ADR-004).
 - Search and queries follow their declared access patterns and pagination rules (Q1, Q7, Q9, §6.1).
-- A soft-deleted product no longer appears in active-product searches, but its historical information is not destroyed (D-03, ADR-003, §2.2, §7.1).
+- A soft-deleted product must no longer appear in active-product searches, while its historical information remains intact (D-03, ADR-003, §2.2, §7.1). The later debt register says the `deleted_at` implementation was completed (§13, D-1), while the older §10.1 snapshot omits it; refresh the physical evidence before treating the document as independently verified.
 - Authentication secrets are never exposed in responses or logs (§7).
 
 ## 7. Assumptions Requiring Confirmation
@@ -58,4 +58,4 @@ According to the decisions reflected in the model, the product **does not** incl
 - The exact authorization matrix for administrators and sellers.
 - The visual form of the interface and supported image formats/sizes; the model does not specify them.
 - The operational meaning of “report” in the interface; the data defines aggregation by product and frozen category, but not its visual presentation.
-- The final wording of the report acceptance criterion in light of decision H-1 (§11.1): grouping by product and frozen label can produce more than one row for the same product.
+- The signed report acceptance criterion CA-06.1 still needs wording alignment with the closed H-1 decision (§11.1): grouping by the frozen category label can produce more than one row for the same product. The grouping decision itself is closed; the documentary wording is not yet aligned.

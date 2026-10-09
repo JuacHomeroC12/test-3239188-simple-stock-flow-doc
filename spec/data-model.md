@@ -1,5 +1,6 @@
 # Data Model — Simple Stock Flow
 
+> **Translation note:** Explanatory prose is translated into English. Database identifiers, code symbols, source paths, migration/task/decision IDs, literal seeded category values, SQL statements, and recorded query output are preserved where they serve as technical evidence. Consequently, a few labels and data values in the historical SQL output remain in Spanish; they are retained as recorded evidence, not as untranslated narrative. This translated copy does not claim that the queries were re-executed.
 
 **The single source of truth for the data model.** Implementers should not need to inspect the code or connect to the database engine to know what exists, what type it has, which rule applies, and **where that rule currently lives**.
 
